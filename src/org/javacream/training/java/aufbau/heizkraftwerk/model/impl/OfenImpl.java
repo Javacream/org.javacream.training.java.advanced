@@ -1,9 +1,13 @@
 package org.javacream.training.java.aufbau.heizkraftwerk.model.impl;
 
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
+import org.javacream.training.java.aufbau.heizkraftwerk.Context;
 import org.javacream.training.java.aufbau.heizkraftwerk.Energietraeger;
 import org.javacream.training.java.aufbau.heizkraftwerk.model.api.Ofen;
 import org.javacream.training.java.aufbau.heizkraftwerk.model.api.TemperaturException;
@@ -19,17 +23,42 @@ import org.javacream.training.java.aufbau.heizkraftwerk.model.api.TemperaturExce
  */
 public class OfenImpl implements Ofen {
 
+	private ScheduledExecutorService scheduledExecutorService;
+	private Integer isolation;
+	public Integer getIsolation() {
+		return isolation;
+	}
+
+	public void setScheduledExecutorService(ScheduledExecutorService scheduledExecutorService) {
+		this.scheduledExecutorService = scheduledExecutorService;
+	}
+
 	private Integer istTemperatur = 20;
 	private Integer sollTemperatur = 100;
 	private Integer kuehlTemperatur = 25;
 	private Brennkammer brennkammer = null;
 	private Set<Object> unverbrennbar;
 	private Set<Energietraeger> asche;
-	public OfenImpl(Integer sollTemperatur) {
+	public OfenImpl(Integer sollTemperatur, Integer isolation) {
 		this.sollTemperatur = sollTemperatur;
 		brennkammer = new Brennkammer();
 		asche = new HashSet<>();
 		unverbrennbar = new HashSet<>();
+		this.isolation = isolation;
+	}
+	
+	public void init() {
+		scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+
+			@Override
+			public void run() {
+				if (istTemperatur > Context.getUmgebungsTemperatur()) {
+					System.out.println("Abkühlung um " + new Date() + ", istTemperatur=" + istTemperatur);
+					istTemperatur--;
+				}
+			}
+		}, 0, isolation, TimeUnit.SECONDS);
+
 	}
 
 	private void erhöheTemperatur(Integer brennwert) {

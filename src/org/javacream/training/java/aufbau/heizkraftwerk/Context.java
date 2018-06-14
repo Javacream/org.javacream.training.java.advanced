@@ -2,9 +2,13 @@ package org.javacream.training.java.aufbau.heizkraftwerk;
 
 import java.io.IOException;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.javacream.training.java.aufbau.heizkraftwerk.app.HeizungsAnwendung;
 import org.javacream.training.java.aufbau.heizkraftwerk.app.HeizungsKonfigurationsAnwendung;
+import org.javacream.training.java.aufbau.heizkraftwerk.app.ParallelHeizungsAnwendung;
 import org.javacream.training.java.aufbau.heizkraftwerk.app.WartungsAnwendung;
 import org.javacream.training.java.aufbau.heizkraftwerk.controller.api.HeizungsController;
 import org.javacream.training.java.aufbau.heizkraftwerk.controller.api.HeizungsKonfigurationsController;
@@ -25,7 +29,18 @@ public abstract class Context {
 	private static HeizungsAnwendung heizungsAnwendung;
 	private static WartungsAnwendung wartungsAnwendung;
 	private static HeizungsKonfigurationsAnwendung heizungsKonfigurationsAnwendung;
+	private static ParallelHeizungsAnwendung parallelHeizungsAnwendung;
+	private static Integer umgebungsTemperatur;
+	private static ExecutorService executorService;
+	private static ScheduledExecutorService scheduledExecutorService;
 
+	
+	public static ExecutorService getExecutorService() {
+		return executorService;
+	}
+	public static ScheduledExecutorService getScheduledExecutorService() {
+		return scheduledExecutorService;
+	}
 	public static HeizungsKonfigurationsAnwendung getHeizungsKonfigurationsAnwendung() {
 		return heizungsKonfigurationsAnwendung;
 	}
@@ -61,6 +76,13 @@ public abstract class Context {
 		Integer kuehlTemperatur = Integer.parseInt(konfiguration.getProperty("ofen.kuehlTemperatur"));
 		Integer maxVerbrannt = Integer.parseInt(konfiguration.getProperty("ofen.kapazitaetVerbrannt"));
 		Integer maxUnverbrannt = Integer.parseInt(konfiguration.getProperty("ofen.kapazitaetUnverbrannt"));
+		Integer isolation = Integer.parseInt(konfiguration.getProperty("ofen.isolation"));
+		Integer aufheizEnergie = Integer.parseInt(konfiguration.getProperty("ofen.aufheizEnergie"));
+		Integer aufheizPeriode = Integer.parseInt(konfiguration.getProperty("ofen.aufheizPeriode"));
+		umgebungsTemperatur = Integer.parseInt(konfiguration.getProperty("umgebungsTemperatur"));
+
+		executorService = Executors.newCachedThreadPool();
+		scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
 		//fachobjekte erzeugen
 		HeizungsControllerImpl heizungsControllerImpl = new HeizungsControllerImpl();
@@ -68,30 +90,46 @@ public abstract class Context {
 		ProfilingHeizungsControllerDecorator profilingHeizungsControllerDecorator = new ProfilingHeizungsControllerDecorator(); 
 		profilingHeizungsControllerDecorator.setDelegate(heizungsControllerImpl);
 		auditingHeizungsControllerDecorator.setDelegate(profilingHeizungsControllerDecorator);
-		
-		
 		WartungsControllerImpl wartungsControllerImpl = new WartungsControllerImpl();
 		HeizungsKonfigurationsControllerImpl heizungsKonfigurationsControllerImpl = new HeizungsKonfigurationsControllerImpl();
+		parallelHeizungsAnwendung = new ParallelHeizungsAnwendung();
 		heizungsAnwendung = new HeizungsAnwendung();
 		wartungsAnwendung = new WartungsAnwendung();
 		heizungsKonfigurationsAnwendung = new HeizungsKonfigurationsAnwendung();
 		
 		//abhängigkeiten (dependencies) setzen (injecten)
-		ofen = new OfenImpl(sollTemperatur);
-		ofen.setKuehlTemperatur(kuehlTemperatur);
-		
+		OfenImpl ofenImpl = new OfenImpl(sollTemperatur, isolation);
+		ofenImpl.setKuehlTemperatur(kuehlTemperatur);
+		ofenImpl.setScheduledExecutorService(scheduledExecutorService);
 		wartungsControllerImpl.setMaximumUnverbrannt(maxUnverbrannt);
 		wartungsControllerImpl.setMaximumVerbrannt(maxVerbrannt);
-		heizungsControllerImpl.setOfen(ofen);
-		wartungsControllerImpl.setOfen(ofen);
-		heizungsKonfigurationsControllerImpl.setOfen(ofen);
+		heizungsControllerImpl.setOfen(ofenImpl);
+		wartungsControllerImpl.setOfen(ofenImpl);
+		heizungsKonfigurationsControllerImpl.setOfen(ofenImpl);
 		heizungsAnwendung.setHeizungsController(auditingHeizungsControllerDecorator);
 		wartungsAnwendung.setWartungsController(wartungsControllerImpl);
 		heizungsKonfigurationsAnwendung.setHeizungsKonfigurationsController(heizungsKonfigurationsControllerImpl);
+		parallelHeizungsAnwendung.setExecutorService(executorService);
+		parallelHeizungsAnwendung.setScheduledExecutorService(scheduledExecutorService);
+		parallelHeizungsAnwendung.setHeizungsController(heizungsControllerImpl);
+		parallelHeizungsAnwendung.setAufheizEnergie(aufheizEnergie);
+		parallelHeizungsAnwendung.setAufheizPeriode(aufheizPeriode);
 		
+		//initialisiere
+		ofenImpl.init();
+		
+		//setze referenzen
 		heizungsController = auditingHeizungsControllerDecorator;
 		wartungsController = wartungsControllerImpl;
 		heizungsKonfigurationsController = heizungsKonfigurationsControllerImpl;
+		ofen = ofenImpl;
+	}
+
+	public static ParallelHeizungsAnwendung getParallelHeizungsAnwendung() {
+		return parallelHeizungsAnwendung;
+	}
+	public static Integer getUmgebungsTemperatur() {
+		return umgebungsTemperatur;
 	}
 	
 }
