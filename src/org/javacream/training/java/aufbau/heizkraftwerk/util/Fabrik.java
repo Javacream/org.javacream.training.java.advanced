@@ -5,6 +5,12 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.javacream.training.java.aufbau.heizkraftwerk.util.Fabrik.OfenElementParser.OfenElement;
@@ -49,16 +55,35 @@ public class Fabrik {
 		return null;
 
 	}
-
-	public static class Beladungsplanlader {
+	public static class DateiBeladungsplanlader{
 		public static List<String> ladeplan() {
 			try {
-				return Files.readAllLines(Paths.get("c:/_training/data/beladungsplan.txt"));
+				return Files.readAllLines(Paths.get("c:/_training/workspace/org.javacream.training.java.aufbau/data/beladungsplan.txt"));
 
 			} catch (IOException e) {
 				e.printStackTrace();
 				return null;
 			}
+		}
+	}
+	public static class DatenbankBeladungsplanlader {
+		public static List<String> ladeplan() {
+			List<String> beladungsplan = new ArrayList<>();
+			try(Connection con = DriverManager.getConnection("jdbc:hsqldb:hsql://10.28.4.1", "SA", "")){
+				Statement stmt = con.createStatement();
+				ResultSet rs = stmt.executeQuery("select * from beladungsplan");
+				while(rs.next()) {
+					String row = rs.getString(1);
+					beladungsplan.add(row);
+				}
+				Integer numberOfDeletedRows = stmt.executeUpdate("delete from audit");
+				System.out.println(numberOfDeletedRows);
+
+			}
+			catch(SQLException e) {
+				e.printStackTrace();
+			}
+			return beladungsplan;
 		}
 	}
 

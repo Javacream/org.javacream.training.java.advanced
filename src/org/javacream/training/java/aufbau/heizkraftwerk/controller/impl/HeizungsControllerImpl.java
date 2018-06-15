@@ -14,7 +14,7 @@ public class HeizungsControllerImpl extends UeberwachungsControllerImpl implemen
 	 */
 	@Override
 	public void planAusfuehren() {
-		for (String element : Fabrik.Beladungsplanlader.ladeplan()) {
+		for (String element : Fabrik.DatenbankBeladungsplanlader.ladeplan()) {
 			Object o = Fabrik.create(element);
 			if (o instanceof Dose) {
 				o = new DosenAdapter((Dose) o);

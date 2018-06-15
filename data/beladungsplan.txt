@@ -1,0 +1,10 @@
+org.javacream.training.java.aufbau.heizkraftwerk.brennstoffe.Erdgas
+org.javacream.training.java.aufbau.material.Holz,Buche
+org.javacream.training.java.aufbau.material.Papier
+org.javacream.training.java.aufbau.dinge.Dose
+org.javacream.training.java.aufbau.mobiliar.Sofa,IKEA,5
+org.javacream.training.java.aufbau.heizkraftwerk.brennstoffe.Erdoel
+org.javacream.training.java.aufbau.material.Papier
+org.javacream.training.java.aufbau.material.Holz,Buche
+org.javacream.training.java.aufbau.material.Holz,Fichte
+org.javacream.training.java.aufbau.mobiliar.Metallschrank,IKEA,4.4

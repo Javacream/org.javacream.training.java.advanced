@@ -6,6 +6,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.javacream.training.java.aufbau.audit.api.Audit;
+import org.javacream.training.java.aufbau.audit.impl.AuditImpl;
 import org.javacream.training.java.aufbau.heizkraftwerk.app.HeizungsAnwendung;
 import org.javacream.training.java.aufbau.heizkraftwerk.app.HeizungsKonfigurationsAnwendung;
 import org.javacream.training.java.aufbau.heizkraftwerk.app.ParallelHeizungsAnwendung;
@@ -36,6 +38,12 @@ public abstract class Context {
 	private static ExecutorService executorService;
 	private static ScheduledExecutorService scheduledExecutorService;
 	private static WartungsStage wartungsStage;
+	private static Audit audit;
+	
+	
+	public static Audit getAudit() {
+		return audit;
+	}
 	public static WartungsStage getWartungsStage() {
 		return wartungsStage;
 	}
@@ -88,6 +96,9 @@ public abstract class Context {
 		Integer isolation = Integer.parseInt(konfiguration.getProperty("ofen.isolation"));
 		Integer aufheizEnergie = Integer.parseInt(konfiguration.getProperty("ofen.aufheizEnergie"));
 		Integer aufheizPeriode = Integer.parseInt(konfiguration.getProperty("ofen.aufheizPeriode"));
+		String dbUrl = konfiguration.getProperty("datenbank.url");
+		String dbUser = konfiguration.getProperty("datenbank.user");
+		String dbPassword = konfiguration.getProperty("datenbank.password");
 		umgebungsTemperatur = Integer.parseInt(konfiguration.getProperty("umgebungsTemperatur"));
 
 		executorService = Executors.newCachedThreadPool();
@@ -100,15 +111,22 @@ public abstract class Context {
 		HeizungsControllerImpl heizungsControllerImpl = new HeizungsControllerImpl();
 		AuditingHeizungsControllerDecorator auditingHeizungsControllerDecorator = new AuditingHeizungsControllerDecorator();
 		ProfilingHeizungsControllerDecorator profilingHeizungsControllerDecorator = new ProfilingHeizungsControllerDecorator(); 
-		profilingHeizungsControllerDecorator.setDelegate(heizungsControllerImpl);
-		auditingHeizungsControllerDecorator.setDelegate(profilingHeizungsControllerDecorator);
 		WartungsControllerImpl wartungsControllerImpl = new WartungsControllerImpl();
 		HeizungsKonfigurationsControllerImpl heizungsKonfigurationsControllerImpl = new HeizungsKonfigurationsControllerImpl();
 		parallelHeizungsAnwendung = new ParallelHeizungsAnwendung();
 		heizungsAnwendung = new HeizungsAnwendung();
 		wartungsAnwendung = new WartungsAnwendung();
 		heizungsKonfigurationsAnwendung = new HeizungsKonfigurationsAnwendung();
+		AuditImpl auditImpl = new AuditImpl();
+		auditImpl.setUrl(dbUrl);
+		auditImpl.setPassword(dbPassword);
+		auditImpl.setUser(dbUser);
 		
+		//decorators
+		profilingHeizungsControllerDecorator.setDelegate(heizungsControllerImpl);
+		auditingHeizungsControllerDecorator.setDelegate(profilingHeizungsControllerDecorator);
+		auditingHeizungsControllerDecorator.setAudit(auditImpl);
+
 		//abhängigkeiten (dependencies) setzen (injecten)
 		OfenImpl ofenImpl = new OfenImpl(sollTemperatur, isolation);
 		ofenImpl.setKuehlTemperatur(kuehlTemperatur);
@@ -123,11 +141,12 @@ public abstract class Context {
 		heizungsKonfigurationsAnwendung.setHeizungsKonfigurationsController(heizungsKonfigurationsControllerImpl);
 		parallelHeizungsAnwendung.setExecutorService(executorService);
 		parallelHeizungsAnwendung.setScheduledExecutorService(scheduledExecutorService);
-		parallelHeizungsAnwendung.setHeizungsController(heizungsControllerImpl);
+		parallelHeizungsAnwendung.setHeizungsController(auditingHeizungsControllerDecorator);
 		parallelHeizungsAnwendung.setAufheizEnergie(aufheizEnergie);
 		parallelHeizungsAnwendung.setAufheizPeriode(aufheizPeriode);
-		heizungsStage.setHeizungsController(heizungsControllerImpl);
+		heizungsStage.setHeizungsController(auditingHeizungsControllerDecorator);
 		heizungsStage.setScheduledExecutorService(scheduledExecutorService);
+
 		//initialisiere
 		ofenImpl.init();
 		//setze referenzen
@@ -135,6 +154,7 @@ public abstract class Context {
 		wartungsController = wartungsControllerImpl;
 		heizungsKonfigurationsController = heizungsKonfigurationsControllerImpl;
 		ofen = ofenImpl;
+		audit = auditImpl;
 	}
 
 	public static ParallelHeizungsAnwendung getParallelHeizungsAnwendung() {
