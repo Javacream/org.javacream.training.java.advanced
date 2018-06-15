@@ -20,6 +20,8 @@ import org.javacream.training.java.aufbau.heizkraftwerk.controller.impl.Heizungs
 import org.javacream.training.java.aufbau.heizkraftwerk.controller.impl.WartungsControllerImpl;
 import org.javacream.training.java.aufbau.heizkraftwerk.model.api.Ofen;
 import org.javacream.training.java.aufbau.heizkraftwerk.model.impl.OfenImpl;
+import org.javacream.training.java.aufbau.heizkraftwerk.view.HeizungsStage;
+import org.javacream.training.java.aufbau.heizkraftwerk.view.WartungsStage;
 
 public abstract class Context {
 	private static HeizungsController heizungsController;
@@ -33,7 +35,14 @@ public abstract class Context {
 	private static Integer umgebungsTemperatur;
 	private static ExecutorService executorService;
 	private static ScheduledExecutorService scheduledExecutorService;
-
+	private static WartungsStage wartungsStage;
+	public static WartungsStage getWartungsStage() {
+		return wartungsStage;
+	}
+	public static HeizungsStage getHeizungsStage() {
+		return heizungsStage;
+	}
+	private static HeizungsStage heizungsStage;
 	
 	public static ExecutorService getExecutorService() {
 		return executorService;
@@ -85,6 +94,9 @@ public abstract class Context {
 		scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
 		//fachobjekte erzeugen
+		heizungsStage = new HeizungsStage();
+		wartungsStage = new WartungsStage();
+		
 		HeizungsControllerImpl heizungsControllerImpl = new HeizungsControllerImpl();
 		AuditingHeizungsControllerDecorator auditingHeizungsControllerDecorator = new AuditingHeizungsControllerDecorator();
 		ProfilingHeizungsControllerDecorator profilingHeizungsControllerDecorator = new ProfilingHeizungsControllerDecorator(); 
@@ -114,10 +126,10 @@ public abstract class Context {
 		parallelHeizungsAnwendung.setHeizungsController(heizungsControllerImpl);
 		parallelHeizungsAnwendung.setAufheizEnergie(aufheizEnergie);
 		parallelHeizungsAnwendung.setAufheizPeriode(aufheizPeriode);
-		
+		heizungsStage.setHeizungsController(heizungsControllerImpl);
+		heizungsStage.setScheduledExecutorService(scheduledExecutorService);
 		//initialisiere
 		ofenImpl.init();
-		
 		//setze referenzen
 		heizungsController = auditingHeizungsControllerDecorator;
 		wartungsController = wartungsControllerImpl;

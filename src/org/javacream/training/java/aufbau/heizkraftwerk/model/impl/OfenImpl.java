@@ -1,7 +1,6 @@
 package org.javacream.training.java.aufbau.heizkraftwerk.model.impl;
 
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
@@ -53,7 +52,7 @@ public class OfenImpl implements Ofen {
 			@Override
 			public void run() {
 				if (istTemperatur > Context.getUmgebungsTemperatur()) {
-					System.out.println("Abkühlung um " + new Date() + ", istTemperatur=" + istTemperatur);
+					//System.out.println("Abkühlung um " + new Date() + ", istTemperatur=" + istTemperatur);
 					istTemperatur--;
 				}
 			}

@@ -11,7 +11,7 @@ import javafx.stage.Stage;
 public class HelloWorldApplication extends Application {
 
 	public static void main(String[] args) {
-		Application.launch(args);
+		Application.launch(HelloWorldApplication.class, args);
 	}
 
 	@Override
@@ -23,7 +23,6 @@ public class HelloWorldApplication extends Application {
         btn.setLayoutY(80);
         btn.setText("Hello World");
         btn.setOnAction(new EventHandler<ActionEvent>() {
-
             public void handle(ActionEvent event) {
                 System.out.println("Hello World");
             }
